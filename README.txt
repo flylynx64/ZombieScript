@@ -7,8 +7,8 @@ Group Members:
   Full Name: Shujah Ahmad
   EID: saa3947
   
-  Full Name: 
-  EID: 
+  Full Name: Ashish Gangshettiwar
+  EID: avg585
   
   ...
   
