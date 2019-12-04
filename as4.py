@@ -1,5 +1,13 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Dec  2 22:28:30 2019
+
+@author: ashis
+"""
+
 import random
 import math
+import numpy
 
 from gamelib import *
 
@@ -32,8 +40,137 @@ class ZombieCharacter(ICharacter):
 class PlayerCharacter(ICharacter):
     def __init__(self, obj_id, health, x, y, map_view):
         ICharacter.__init__(self, obj_id, health, x, y, map_view)
+        self.scan = 0
+        self.healcount = 0
         # You may add any instance attributes you find useful to save information between frames
 
     def selectBehavior(self):
         # Replace the body of this method with your character's behavior
-        pass
+        if self.scan ==0:
+            #Scan
+            self.scan = 1
+            return ScanEvent(self)
+        else:
+            closestzdist=99999999
+            closestzid=0
+            closestzthreshold = 4
+            healththresh = 0.5
+
+            map_view = self.getMapView()
+            size_x, size_y = map_view.getMapSize()
+            x, y = self.getPos()
+            xz = 0
+            yz = 0            
+            
+            for z in self.getScanResults():
+                dist=math.sqrt((self.getPos()[0]-z.getPos()[0])**2+(self.getPos()[1]-z.getPos()[1])**2)
+                if dist<closestzdist:
+                    closestzid=z.getID()
+                    xz = z.getPos()[0]
+                    yz = z.getPos()[1]
+                    closestzdist=dist
+            if closestzdist<=closestzthreshold and self.getHealth() > self.getInitHealth() * healththresh:
+                #Attack closest Zombie
+                self.scan = 0
+                return AttackEvent(self, closestzid)
+            if  closestzdist<=closestzthreshold and self.getHealth() < self.getInitHealth() * healththresh:
+                if self.getHealth() < self.getInitHealth() *healththresh*0.8 and self.healcount <5:
+                    self.scan = 0
+                    self.healcount += 1
+                    return HealEvent(self)
+                elif self.getHealth() < self.getInitHealth() *healththresh*0.8 and self.healcount >=5:
+                    self.scan = 0
+                    return AttackEvent(self, closestzid)                    
+                else:
+                    xzdiff = x - xz # Diff x coordinate of nearest zombie
+                    yzdiff = y - yz # Diff y coordinate of nearest zombie
+                    if abs(xzdiff) + abs(yzdiff) >3:
+                        if abs(xzdiff)>abs(yzdiff):
+                            xzdiff = 2*numpy.sign(xzdiff)
+                            if yzdiff == 0:
+                                xzdiff = 3
+                            yzdiff = 1*numpy.sign(yzdiff)
+                        else:
+                            xzdiff = 1*numpy.sign(xzdiff)
+                            yzdiff = 2*numpy.sign(yzdiff)
+                            if xzdiff == 0:
+                                yzdiff = 3
+                    if x + xzdiff < 0 or x + xzdiff >= size_x:
+                        xzdiff = 0
+                    if y + yzdiff < 0 or y + yzdiff >= size_y:
+                        yzdiff = 0
+                    self.scan = 0
+                    return MoveEvent(self, x + xzdiff, y + yzdiff)
+                
+                
+                
+            if closestzdist==0 and self.getHealth() < self.getInitHealth() * healththresh:
+                self.scan = 0
+                self.healcount += 1
+                if self.healcount <= 5:
+                    return HealEvent(self)
+                else:
+                    #attack because it should be an instant kill
+                    return AttackEvent(self, closestzid)
+            if closestzdist==0 and self.getHealth() > self.getInitHealth() * healththresh:
+                #Attack Zombie on the same spot as us
+                self.scan = 0
+                return AttackEvent(self, closestzid)
+            
+            
+            
+            
+            if closestzdist>closestzthreshold and self.healcount <3:
+                self.scan = 0
+                if self.getHealth() > self.getInitHealth() * healththresh:
+                    xzdiff = x - xz # Diff x coordinate of nearest zombie
+                    yzdiff = y - yz # Diff y coordinate of nearest zombie
+                    if abs(xzdiff) + abs(yzdiff) >3:
+                        if abs(xzdiff)>abs(yzdiff):
+                            xzdiff = 2*numpy.sign(xzdiff)
+                            if yzdiff == 0:
+                                xzdiff = 3
+                            yzdiff = 1*numpy.sign(yzdiff)
+                        else:
+                            xzdiff = 1*numpy.sign(xzdiff)
+                            yzdiff = 2*numpy.sign(yzdiff)
+                            if xzdiff == 0:
+                                yzdiff = 3
+                    if x + xzdiff < 0 or x + xzdiff >= size_x:
+                        xzdiff = 0
+                    if y + yzdiff < 0 or y + yzdiff >= size_y:
+                        yzdiff = 0
+                    return MoveEvent(self, x + xzdiff, y + yzdiff)
+                else:
+                    self.healcount +=1
+                    return HealEvent(self)
+                
+            if  closestzdist>closestzthreshold and self.healcount >=3:
+                self.scan = 0
+                if self.getHealth() < self.getInitHealth() * healththresh*0.8 and self.healcount <5:
+                    self.healcount +=1
+                    return HealEvent(self)
+                else:
+                    if len(self.getScanResults())==0:
+                        xzdiff = x - (size_x/2) 
+                        yzdiff = y - (size_y/2)   
+                    if len(self.getScanResults())!=0:
+                        xzdiff = x - xz # Diff x coordinate of nearest zombie
+                        yzdiff = y - yz # Diff y coordinate of nearest zombie
+                    if abs(xzdiff) + abs(yzdiff) >3:
+                        if abs(xzdiff)>abs(yzdiff):
+                            xzdiff = 2*numpy.sign(xzdiff)
+                            if yzdiff == 0:                                
+                                xzdiff = 3
+                            yzdiff = 1*numpy.sign(yzdiff)
+                        else:
+                            xzdiff = 1*numpy.sign(xzdiff)
+                            yzdiff = 2*numpy.sign(yzdiff)
+                            if xzdiff == 0:
+                                yzdiff = 3
+                    if x - xzdiff < 0 or x - xzdiff >= size_x:
+                        xzdiff = 0
+                    if y - yzdiff < 0 or y - yzdiff >= size_y:
+                        yzdiff = 0
+                    return MoveEvent(self, x - xzdiff, y - yzdiff)
+            pass
