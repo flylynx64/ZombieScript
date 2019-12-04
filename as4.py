@@ -69,6 +69,18 @@ class PlayerCharacter(ICharacter):
                     xz = z.getPos()[0]
                     yz = z.getPos()[1]
                     closestzdist=dist
+            
+            
+            if closestzdist==0 and self.getHealth() < self.getInitHealth() * healththresh:
+                self.scan = 0
+                self.healcount += 1
+                if self.healcount <= 5:
+                    return HealEvent(self)
+                else:
+                    #attack because it should be an instant kill
+                    return AttackEvent(self, closestzid)            
+            
+                                                  
             if closestzdist<=closestzthreshold and self.getHealth() > self.getInitHealth() * healththresh:
                 #Attack closest Zombie
                 self.scan = 0
@@ -102,18 +114,7 @@ class PlayerCharacter(ICharacter):
                     self.scan = 0
                     return MoveEvent(self, x + xzdiff, y + yzdiff)
                 
-                
-                
-            if closestzdist==0 and self.getHealth() < self.getInitHealth() * healththresh:
-                self.scan = 0
-                self.healcount += 1
-                if self.healcount <= 5:
-                    return HealEvent(self)
-                else:
-                    #attack because it should be an instant kill
-                    return AttackEvent(self, closestzid)
-            
-            
+                                
             if closestzdist>closestzthreshold and self.healcount <3:
                 self.scan = 0
                 if self.getHealth() > self.getInitHealth() * healththresh:
