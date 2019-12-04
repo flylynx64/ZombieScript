@@ -112,12 +112,6 @@ class PlayerCharacter(ICharacter):
                 else:
                     #attack because it should be an instant kill
                     return AttackEvent(self, closestzid)
-            if closestzdist==0 and self.getHealth() > self.getInitHealth() * healththresh:
-                #Attack Zombie on the same spot as us
-                self.scan = 0
-                return AttackEvent(self, closestzid)
-            
-            
             
             
             if closestzdist>closestzthreshold and self.healcount <3:
