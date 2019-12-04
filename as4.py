@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Dec  2 22:28:30 2019
-
-@author: ashis
-"""
-
 import random
 import math
 import numpy
@@ -53,8 +46,8 @@ class PlayerCharacter(ICharacter):
         else:
             closestzdist=99999999
             closestzid=0
-            closestzthreshold = 4
-            healththresh = 0.5
+            closestzthreshold = 3
+            healththresh = 0.4
 
             map_view = self.getMapView()
             size_x, size_y = map_view.getMapSize()
@@ -62,6 +55,7 @@ class PlayerCharacter(ICharacter):
             xz = 0
             yz = 0            
             
+            #Find closest zombie
             for z in self.getScanResults():
                 dist=math.sqrt((self.getPos()[0]-z.getPos()[0])**2+(self.getPos()[1]-z.getPos()[1])**2)
                 if dist<closestzdist:
@@ -70,7 +64,7 @@ class PlayerCharacter(ICharacter):
                     yz = z.getPos()[1]
                     closestzdist=dist
             
-            
+            #Case when Zombie on same spot as us
             if closestzdist==0 and self.getHealth() < self.getInitHealth() * healththresh:
                 self.scan = 0
                 self.healcount += 1
@@ -80,11 +74,13 @@ class PlayerCharacter(ICharacter):
                     #attack because it should be an instant kill
                     return AttackEvent(self, closestzid)            
             
-                                                  
+            #Case when Zombie close to us and Health is high                                      
             if closestzdist<=closestzthreshold and self.getHealth() > self.getInitHealth() * healththresh:
                 #Attack closest Zombie
                 self.scan = 0
                 return AttackEvent(self, closestzid)
+            
+            #Cases when Zombie close to us and Health is low 
             if  closestzdist<=closestzthreshold and self.getHealth() < self.getInitHealth() * healththresh:
                 if self.getHealth() < self.getInitHealth() *healththresh*0.8 and self.healcount <5:
                     self.scan = 0
@@ -112,11 +108,12 @@ class PlayerCharacter(ICharacter):
                     if y + yzdiff < 0 or y + yzdiff >= size_y:
                         yzdiff = 0
                     self.scan = 0
-                    return MoveEvent(self, x + xzdiff, y + yzdiff)
+                    return MoveEvent(self, x + xzdiff, y + yzdiff) #Moving away from Zombie
                 
-                                
-            if closestzdist>closestzthreshold and self.healcount <3:
+            #Case when Zombie far from us and We have 2 heals left                     
+            if closestzdist>closestzthreshold and self.healcount <=3:
                 self.scan = 0
+                #Case when health is high
                 if self.getHealth() > self.getInitHealth() * healththresh:
                     xzdiff = x - xz # Diff x coordinate of nearest zombie
                     yzdiff = y - yz # Diff y coordinate of nearest zombie
@@ -135,20 +132,21 @@ class PlayerCharacter(ICharacter):
                         xzdiff = 0
                     if y + yzdiff < 0 or y + yzdiff >= size_y:
                         yzdiff = 0
-                    return MoveEvent(self, x + xzdiff, y + yzdiff)
+                    return MoveEvent(self, x + xzdiff, y + yzdiff) #Moving away from zombie
                 else:
                     self.healcount +=1
                     return HealEvent(self)
                 
-            if  closestzdist>closestzthreshold and self.healcount >=3:
+            # Case when Zombie far from us and less than 2 heals left. here we become aggressive.    
+            if  closestzdist>closestzthreshold and self.healcount >3:
                 self.scan = 0
                 if self.getHealth() < self.getInitHealth() * healththresh*0.8 and self.healcount <5:
                     self.healcount +=1
                     return HealEvent(self)
                 else:
                     if len(self.getScanResults())==0:
-                        xzdiff = x - (size_x/2) 
-                        yzdiff = y - (size_y/2)   
+                        xzdiff = x - int(size_x/2) 
+                        yzdiff = y - int(size_y/2)   
                     if len(self.getScanResults())!=0:
                         xzdiff = x - xz # Diff x coordinate of nearest zombie
                         yzdiff = y - yz # Diff y coordinate of nearest zombie
@@ -167,5 +165,5 @@ class PlayerCharacter(ICharacter):
                         xzdiff = 0
                     if y - yzdiff < 0 or y - yzdiff >= size_y:
                         yzdiff = 0
-                    return MoveEvent(self, x - xzdiff, y - yzdiff)
+                    return MoveEvent(self, x - xzdiff, y - yzdiff)#Moving towards zombie or center
             pass
